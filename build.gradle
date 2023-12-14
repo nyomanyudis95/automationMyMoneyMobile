@@ -1,0 +1,52 @@
+plugins {
+    id 'java'
+}
+
+group 'org.example'
+version '1.0-SNAPSHOT'
+
+repositories {
+    mavenCentral()
+}
+
+dependencies {
+    testImplementation 'org.junit.jupiter:junit-jupiter-api:5.8.1'
+    testImplementation group: 'org.junit.vintage', name: 'junit-vintage-engine', version: '5.9.1'
+
+    testImplementation group: 'io.appium', name: 'java-client', version: '9.0.0'
+    testImplementation group: 'org.seleniumhq.selenium', name: 'selenium-java', version: '4.14.1'
+
+    testImplementation 'io.cucumber:cucumber-java:7.13.0'
+    testImplementation 'io.cucumber:cucumber-junit:7.13.0'
+    testImplementation 'io.cucumber:cucumber-core:7.13.0'
+}
+
+test {
+    useJUnitPlatform()
+}
+
+configurations {
+    cucumberRunTime {
+        extendsFrom testImplementation
+    }
+}
+
+def tagsMobile = (findProperty('tags') == null) ? 'not @exclude' : findProperty('tags') + ' and not @exclude'
+
+tasks.register('mobileTest') {
+    dependsOn assemble, testClasses
+    doLast {
+        javaexec {
+            main = "io.cucumber.core.cli.Main"
+            classpath = configurations.cucumberRunTime + sourceSets.main.output + sourceSets.test.output
+            args = [
+                    '--plugin', 'html:reports/automation-demoblaze-report.html',
+                    '--plugin', 'json:reports/automation-demoblaze-report.json',
+                    '--plugin', 'pretty',
+                    '--glue', 'com.myMoney',
+                    '--tags', "${tagsMobile}",
+                    'src/test/resources/features'
+            ]
+        }
+    }
+}
